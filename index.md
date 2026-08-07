@@ -246,9 +246,16 @@ From `applications/ephemcache/values.yaml`, overridden in
 :::{warning}
 **`ncores` must equal `resources.limits.cpu`.** The scripts otherwise default
 their parallelism to `nproc`, which reports the *node's* core count (128 on these
-nodes), not the pod's CPU limit. At roughly 4 GB per parallel chunk that
-oversubscribes badly and can OOM-kill the pod. `selftest` warns when `ncores` is
-unset, but nothing prevents the two drifting apart. Change them together.
+nodes), not the pod's CPU limit.
+
+Memory scales with the number of chunks running at once. At `ncores: 48` the pod
+peaks at about 21 GiB, so roughly 0.45 GiB per concurrent chunk; left to `nproc`
+it would run 128 at once, which extrapolates to something near the 64 Gi limit
+before page cache is counted. It would also oversubscribe the CPU quota badly —
+the pod is already throttled 10–17% of scheduling periods at 48.
+
+`selftest` warns when `ncores` is unset, but nothing prevents the two drifting
+apart. Change them together.
 :::
 
 ### Node placement
