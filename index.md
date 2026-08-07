@@ -126,6 +126,9 @@ where a given behaviour comes from — none of it is maintained here.
 
 **Ours.** Two services, one repository each:
 
+```{rst-class} technote-wide-content
+```
+
 | Service | Repository | What it is |
 |---|---|---|
 | `ephemcache` | [`mjuric/lsst-gen-ephemcache`](https://github.com/mjuric/lsst-gen-ephemcache) | The **cache generator**. The whole service: pipeline scripts, container entrypoint and selftest, `Dockerfile`, and the GitHub Actions workflow that publishes the image. |
@@ -153,6 +156,9 @@ scope for this note:
 Everything the two components share lives under
 `/sdf/group/rubin/web_data/mpsky-data`, which is published at
 <https://s3df.slac.stanford.edu/data/rubin/mpsky-data>.
+
+```{rst-class} technote-wide-content
+```
 
 | Path | Written by | Read by | Notes |
 |---|---|---|---|
@@ -231,6 +237,9 @@ From `applications/ephemcache/values.yaml`, overridden in
 `values-usdfdev.yaml`. The full generated reference is in the chart's
 `README.md`; these are the ones with consequences.
 
+```{rst-class} technote-wide-content
+```
+
 | Value | usdfdev | Why it matters |
 |---|---|---|
 | `schedule` | `0 */3 * * *` | Frequent retries are free because runs skip when the cache exists |
@@ -258,6 +267,7 @@ the pod is already throttled 10–17% of scheduling periods at 48.
 apart. Change them together.
 :::
 
+(node-placement)=
 ### Node placement
 
 The job runs on the RSP node pool — four nodes, `sdfk8so001`–`004`, each 128 CPU
@@ -446,16 +456,49 @@ image rebuild.
 
 Symptoms actually observed, with causes and fixes.
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| `night=N not in available in <url>` and HTTP 400 | That night has no cache in the datastore. Remember `night = floor(t) - 1` before concluding it is missing | Build that night, or accept the gap |
-| HTTP 403 fetching a cache that is listed in the index | File is not world-readable. The web server is not a member of `rubin_users`, so mode 660 is not enough | `chmod o+r` the file; new output is already 644 |
-| Job stays `Pending` indefinitely | Missing toleration or `nodeSelector`, or a request too large for the general pool | Ensure both RSP keys are present |
-| `The JPL planet ephemeris file has not been found` | SPICE kernels present but unreadable — a permission denial wearing a missing-file message | `chmod -R a+rX` at image build time |
-| `ValueError: output array is read-only` in `mpsky build` | **`mpsky` is currently incompatible with pandas 3**, which makes Copy-on-Write mandatory and so returns read-only arrays from `.values`. `mpsky` writes to one in place | The image pins `pandas<3`. Do not relax that pin until `mpsky` is fixed — the failure comes at the very end of a run, after the whole fan-out has completed |
-| Pod OOM-killed during stage 3 | `ncores` does not match `resources.limits.cpu`, so parallelism was taken from `nproc` | Set them together |
-| Job reports success but no cache appeared | A pipeline whose last stage is `tee` masks the real exit status | The entrypoint exits with `${PIPESTATUS[0]}`; preserve that if editing |
-| No logs available for a run that finished | Pods are reaped within ~30 minutes | Use Loki, or the `logs/` copy |
+`night=N not in available in <url>`, and HTTP 400
+: That night has no cache in the datastore. Convert the client's query time
+  before concluding one is missing: `mpsky` derives the night as
+  `floor(t) - 1`, so a query at `t = 61259.5` is served from night `61258`.
+  Build the night, or accept the gap.
+
+HTTP 403 fetching a cache that *is* listed in the directory index
+: The file is not world-readable. The web server is not a member of
+  `rubin_users`, so mode 660 is not enough — and because `mpsky` discovers
+  nights by scraping the index, it will advertise a night it then cannot
+  download. `chmod o+r` the file; output written by the pipeline is already 644.
+
+The Job stays `Pending` indefinitely
+: Either the toleration or the `nodeSelector` for the RSP pool is missing, or
+  the request is too large for the general pool. Both keys are required; see
+  {ref}`node-placement`.
+
+`The JPL planet ephemeris file has not been found`
+: The SPICE kernels are present but unreadable — a permission denial wearing a
+  missing-file message. The image build makes them readable; if this appears,
+  check that step survived whatever changed in the build.
+
+`ValueError: output array is read-only` in `mpsky build`
+: **`mpsky` is currently incompatible with pandas 3**, which makes
+  Copy-on-Write mandatory and so hands back read-only arrays from `.values`;
+  `mpsky` writes to one in place. The image pins `pandas<3`. Do not relax that
+  pin until `mpsky` is fixed — the failure lands at the very end of a run, after
+  the whole fan-out has completed.
+
+The pod is OOM-killed during stage 3
+: `ncores` does not match `resources.limits.cpu`, so the scripts took their
+  parallelism from `nproc` and ran one chunk per *node* core. Set the two
+  together.
+
+The Job reports success but no cache appeared
+: A pipeline whose last stage is `tee` reports `tee`'s exit status, not the
+  run's. The entrypoint exits with `${PIPESTATUS[0]}` to avoid exactly this;
+  preserve that if you edit it.
+
+No logs are available for a run that has finished
+: Pods are reaped within about half an hour, and the CronJob's history limits
+  retain Job objects rather than output. Use Loki, or the durable copy under
+  `logs/` if `logToFile` is enabled.
 
 (gaps)=
 ## Known gaps
