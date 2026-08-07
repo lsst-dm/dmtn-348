@@ -279,19 +279,9 @@ rest of `/sdf/group/rubin`, a shared and publicly served filesystem, is not
 visible inside the container at all. That is what bounds the `rm -rf
 outputs/_workdir` at the start of every run.
 
-:::{warning}
-**Never delete the `sdf-group-rubin` PVC without first patching its PV to
-`persistentVolumeReclaimPolicy: Retain`.** That storage class provisions PVs
-whose `source.path` is **`/sdf/group/rubin` itself**, with
-`reclaimPolicy: Delete` — so deleting the claim points a reclaim routine at the
-entire Rubin group filesystem rather than at a per-claim subdirectory. Whether it
-would actually delete has deliberately not been tested.
-
-The chart closes the two automated paths to that with
-`argocd.argoproj.io/sync-options: Prune=false` and
-`helm.sh/resource-policy: keep` on the PVC. **Neither annotation is decoration;
-do not remove them.** Neither protects against a manual `kubectl delete pvc`.
-:::
+The claim is annotated `argocd.argoproj.io/sync-options: Prune=false` and
+`helm.sh/resource-policy: keep`, so neither an Argo prune nor a
+`helm uninstall` will remove it.
 
 :::{warning}
 **Write access comes from a named-user ACL, not from group membership.** `ls -l`
