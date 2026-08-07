@@ -79,17 +79,30 @@ flowchart LR
   MPSKY --> AP
 ```
 
-**A normal night.** The CronJob wakes every three hours, works out which
-observing night it is, and checks whether that night's cache already exists. Most
-of the time it does, and the job exits in under a second — doing nothing is the
-common case. When the cache is missing, the job queries the MPC replica for the
-current orbit catalogue (~9 min), splits it into 100 chunks, runs `sorcha` across
-48 cores to compute ephemerides for every known object (~15 min), packs the
-results into a single ~213 MB cache file and renames it into place. On the other
-side, `mpsky` wakes once a minute; when the night label changes it fetches that
-night's cache, retrying each minute until the cache exists. So a cache that lands
-late is picked up on its own and nobody has to restart anything. AP pipelines then
-query `mpsky` over HTTP until the night rolls over and the cycle repeats.
+**A normal day/night.** The CronJob wakes every three hours, works out which
+observing night it is, and checks whether that night's cache already exists at
+`/sdf/group/rubin/web_data/mpsky-data/caches/eph.<mjd>.<date>.bin`. Most of the
+time it does, and the job exits in under a second — doing nothing is the common
+case.
+
+When a new night rolls over, its cache will be missing, and the job does the real
+work. It queries the MPC orbit replica — PostgreSQL at `172.24.5.71`, database
+`mpc_sbn` — and writes that night's catalogues into
+`mpsky-data/catalogs/` (~9 min). It splits the orbit catalogue into 100 chunks
+under `mpsky-data/_workdir/`, then runs `sorcha` across 48 cores to compute
+ephemerides for every known object (~15 min). Finally `mpsky build` packs the
+per-chunk results into a single ~213 MB file, writing it as
+`caches/eph.<mjd>.<date>.bin.tmp` and renaming it to
+`caches/eph.<mjd>.<date>.bin`. That rename is within one filesystem, so the
+finished cache appears atomically where consumers look for it — `mpsky` never
+sees a half-written file.
+
+On the other side, `mpsky` wakes once a minute; when the night label changes it
+fetches that night's cache and catalogues over HTTPS from
+<https://s3df.slac.stanford.edu/data/rubin/mpsky-data>, retrying each minute until
+they exist. So a cache that lands late is picked up on its own and nobody has to
+restart anything. AP pipelines then query `mpsky` at `172.24.10.34:80` until the
+night rolls over and the cycle repeats.
 
 End to end a real build takes about 26 minutes against a three-hourly schedule,
 so there is a wide margin before the night starts. Note that this margin is
