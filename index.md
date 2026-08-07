@@ -79,35 +79,38 @@ flowchart LR
   MPSKY --> AP
 ```
 
-**A normal day/night.** The CronJob wakes every three hours, works out which
-observing night it is, and checks whether that night's cache already exists at
-`/sdf/group/rubin/web_data/mpsky-data/caches/eph.<mjd>.<date>.bin`. Most of the
-time it does, and the job exits in under a second — doing nothing is the common
-case.
+**A normal day/night.** The `ephemcache` CronJob wakes every three hours, works
+out which observing night it is, and checks whether that night's cache already
+exists at
+`/sdf/group/rubin/web_data/mpsky-data/caches/eph.<mjd>.<date>.bin`. Usually it
+does, and the job exits in under a second — a sub-second run is normal operation,
+not a failure. If the cache for the current night doesn't exist, it initiates its
+construction:
 
-When a new night rolls over, its cache will be missing, and the job does the real
-work. It queries the MPC orbit replica — PostgreSQL at `172.24.5.71`, database
-`mpc_sbn` — and writes that night's catalogues into
-`mpsky-data/catalogs/` (~9 min). It splits the orbit catalogue into 100 chunks
-under `mpsky-data/_workdir/`, then runs `sorcha` across 48 cores to compute
-ephemerides for every known object (~15 min). Finally `mpsky build` packs the
-per-chunk results into a single ~213 MB file, writing it as
-`caches/eph.<mjd>.<date>.bin.tmp` and renaming it to
-`caches/eph.<mjd>.<date>.bin`. That rename is within one filesystem, so the
-finished cache appears atomically where consumers look for it — `mpsky` never
-sees a half-written file.
+- **Downloads the orbit catalog** from the MPC replica — PostgreSQL at
+  `172.24.5.71`, database `mpc_sbn` (~9 min).
+- **Runs `sorcha`** to generate ephemerides of the objects on a dense grid
+  through the night. This is done in chunks: the catalog is split into 100 pieces
+  under `mpsky-data/_workdir/` and processed in parallel across 48 cores
+  (~15 min).
+- **Runs `mpsky`'s cache builder**, which constructs a fast lookup cache the
+  `mpsky` service can use to answer "which objects are in this field?" queries in
+  milliseconds. It is written under a `.tmp` name and then renamed into place, so
+  the finished cache appears atomically and `mpsky` never sees a half-written
+  file.
 
-On the other side, `mpsky` wakes once a minute; when the night label changes it
-fetches that night's cache and catalogues over HTTPS from
-<https://s3df.slac.stanford.edu/data/rubin/mpsky-data>, retrying each minute until
-they exist. So a cache that lands late is picked up on its own and nobody has to
-restart anything. AP pipelines then query `mpsky` at `172.24.10.34:80` until the
-night rolls over and the cycle repeats.
+The run generates two types of files — the catalogs and the ephemerides cache —
+stored under `/sdf/group/rubin/web_data/mpsky-data`, in `catalogs/` and `caches/`
+respectively, and served at
+<https://s3df.slac.stanford.edu/data/rubin/mpsky-data>. The `mpsky` service
+fetches and loads these to answer queries coming from the AP pipelines throughout
+the night. It wakes once a minute, picks up the new night's files when the night
+label changes, and retries until they exist — so a cache that lands late is
+collected on its own and nobody has to restart anything. Pipelines reach the
+service at `172.24.10.34:80`.
 
 End to end a real build takes about 26 minutes against a three-hourly schedule,
-so there is a wide margin before the night starts. Note that this margin is
-currently the only thing protecting the deadline, because a run that fails or
-never starts raises no alarm.
+so there is a wide margin before the night starts.
 
 The two components are coupled only through files in a directory that is served
 over HTTP. `ephemcache` never talks to `mpsky`, and `mpsky` never talks to the
