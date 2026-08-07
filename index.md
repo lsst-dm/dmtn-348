@@ -54,10 +54,12 @@ already-catalogued objects rather than reported as new discoveries.
 Answering that from orbital elements on demand would be far too slow. Instead the
 work is done once per night, ahead of time:
 
-- **`ephemcache`** runs nightly and precomputes ephemerides for every known small
-  body across the coming night, writing a compact per-night **cache** file.
-- **`mpsky`** is a long-running HTTP service that loads that cache and answers
-  positional queries from it in milliseconds.
+- **[`ephemcache`](https://github.com/lsst-sqre/phalanx/tree/main/applications/ephemcache)**
+  runs nightly and precomputes ephemerides for every known small body across the
+  coming night, writing a compact per-night **cache** file.
+- **[`mpsky`](https://github.com/lsst-sqre/phalanx/tree/main/applications/mpsky)**
+  is a long-running HTTP service that loads that cache and answers positional
+  queries from it in milliseconds.
 
 ```{mermaid}
 flowchart LR
