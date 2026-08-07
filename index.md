@@ -182,10 +182,10 @@ run, not the end, so it persists until the next run. Harmless but untidy; see
 {ref}`gaps`.
 :::
 
-### The four stages
+### Daytime: Ephemeris cache generation (ephemcache)
 
-An operator rarely needs more detail than this. Each stage is skipped if its
-output already exists, which is what makes re-running safe.
+Each stage is skipped if its output already exists, which is what makes
+re-running safe.
 
 1. **Fetch MPCORB.** Queries the USDF-internal MPC orbit replica and writes the
    three `catalogs/` files for the night. Roughly 9 minutes. Skipped if that
