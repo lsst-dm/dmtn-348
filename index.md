@@ -491,28 +491,40 @@ Ordered by how much they should worry a new owner.
 ## What promotion to production requires
 
 Not yet done, and listed here as a handover checklist rather than a plan of
-record. The first four are prerequisites; the rest are worth doing but need not
+record. The first six are prerequisites; the rest are worth doing but need not
 block promotion.
 
 1. **Deploy to a production cluster** — either the USDF RSP
    (`usdfprod`, `usdf-rsp.slac.stanford.edu`) or prompt processing
    (`usdfprod-prompt-processing`). Today the application is enabled only in
    `environments/values-usdfdev.yaml`.
-2. **Freeze the references.** Pin `image.tag` to a `sha-<commit>` tag, and pin
+2. **Give the production `mpsky` service a static IP**, as was done at dev with
+   `serviceAnnotations` on the `LoadBalancer`:
+
+   ```yaml
+   serviceAnnotations:
+     metallb.io/address-pool: sdf-rubin-ingest
+     metallb.io/loadBalancerIPs: 172.24.10.34
+   ```
+
+   A production deployment needs its own address from the appropriate pool.
+3. **Repoint the AP pipelines** at the production `mpsky` service, once it has a
+   stable address.
+4. **Freeze the references.** Pin `image.tag` to a `sha-<commit>` tag, and pin
    the bundled `mpsky` to a commit rather than a branch tip.
-3. **Wire up alerting**, including a lateness check, per gap 1.
-4. **Assign an owner**, and record the owning team and Slack channels — both in
+5. **Wire up alerting**, including a lateness check, per gap 1.
+6. **Assign an owner**, and record the owning team and Slack channels — both in
    this note and in the [df-ops service
    page](https://df-ops.lsst.io/usdf-applications/ap/ephemcache/index.html),
    whose contact fields are currently blank.
-5. **Decide a retention policy** for caches and catalogs *(optional)*.
-6. **Reconsider the node pool** *(optional)*. The RSP pool is shared with
+7. **Decide a retention policy** for caches and catalogs *(optional)*.
+8. **Reconsider the node pool** *(optional)*. The RSP pool is shared with
    interactive `nublado` users, and this is a batch job. The nodes also carry
    `edu.stanford.slac.sdf.storage/sdf-group`, which expresses the requirement
    this job actually has — filesystem access plus capacity — more precisely than
    "the RSP project" does. Worth asking SDF whether a batch workload belongs
    here.
-7. **Move `_workdir` out of the served tree** *(optional)*, per gap 5.
+9. **Move `_workdir` out of the served tree** *(optional)*, per gap 5.
 
 ## The legacy epyc system
 
