@@ -480,20 +480,13 @@ Ordered by how much they should worry a new owner.
    containment, not for speed.
 6. **Permissions are fragile.** Writes depend on a single named-user ACL and a
    hardcoded uid, as described above.
-7. **Night 61257 (2026-08-05) is missing** from production, because the legacy
-   cron was disabled before producing it. Queries in that window return HTTP 400.
-   Judged not worth backfilling.
-8. **Efficiency headroom, unclaimed.** The pod is CPU-throttled 10–17% of
+7. **Efficiency headroom, unclaimed.** The pod is CPU-throttled 10–17% of
    scheduling periods because each `sorcha` process sizes its BLAS/numba thread
    pool from the node's 128 cores rather than the pod's 48-core quota. Setting
    `OMP_NUM_THREADS` and friends to 1 is untested but promising. Memory is also
    over-provisioned — a ~21 GiB observed peak against a 64 Gi limit — though 1/min
    sampling may have missed shorter spikes, so reduce it with measurement rather
    than arithmetic.
-9. **Minor `mpsky` bugs.** In no-datastore mode a cache miss reaches
-   `next(caches.values())`, which raises `TypeError` because `dict_values` is not
-   an iterator. And `--return-elements basic` reports `Vmag` as `nan`; only
-   `extended` populates it.
 
 ## What promotion to production requires
 
@@ -508,17 +501,13 @@ record. The first three are prerequisites rather than improvements.
    page](https://df-ops.lsst.io/usdf-applications/ap/ephemcache/index.html),
    whose contact fields are currently blank.
 4. **Decide a retention policy** for caches and catalogs.
-5. **Re-examine the resource request** with measurement: memory looks reducible,
-   and the throttling finding suggests the CPU request may be too, once thread
-   oversubscription is fixed.
-6. **Reconsider the node pool.** The RSP pool is shared with interactive
+5. **Reconsider the node pool.** The RSP pool is shared with interactive
    `nublado` users, and this is a batch job. The nodes also carry
    `edu.stanford.slac.sdf.storage/sdf-group`, which expresses the requirement
    this job actually has — filesystem access plus capacity — more precisely than
    "the RSP project" does. Worth asking SDF whether a batch workload belongs
    here.
-7. **Move `_workdir` out of the served tree**, per gap 5.
-8. **Retire the legacy epyc builder**, below.
+6. **Move `_workdir` out of the served tree**, per gap 5.
 
 ## The legacy epyc system
 
