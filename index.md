@@ -38,7 +38,7 @@ Two facts shape everything else in this note:
 **There is no failure alerting.** A failed or missing nightly run is currently
 silent: nothing pages, emails, or posts to Slack. Combined with the two facts
 above, this is the single largest operational risk in the system, and closing it
-is the first thing a new owner should do. See {ref}`gaps`.
+is the first thing a new owner should do. See {ref}`promotion`.
 :::
 
 The reasoning behind non-obvious settings is given inline rather than left
@@ -179,7 +179,7 @@ night invisible at once.
 **Current status.** `_workdir` sits inside the served tree, so ~41 GB of
 intermediates are web-visible between runs. It is cleared at the *start* of each
 run, not the end, so it persists until the next run. Harmless but untidy; see
-{ref}`gaps`.
+{ref}`promotion`.
 :::
 
 ### Daytime: Ephemeris cache generation (ephemcache)
@@ -491,37 +491,7 @@ No logs are available for a run that has finished
   retain Job objects rather than output. Use Loki, or the durable copy under
   `logs/` if `logToFile` is enabled.
 
-(gaps)=
-## Known gaps
-
-Ordered by how much they should worry a new owner.
-
-1. **No failure alerting.** Nothing reports a failed or missing run. With real
-   consumers and a hard nightly deadline, this is the top priority. A meaningful
-   alert needs both a failure signal and a lateness signal — "no cache for
-   tonight by *T*" — since a run that never starts produces no failure at all.
-2. **References are not frozen.** The image tag is mutable and the bundled
-   `mpsky` tracks a branch tip. Two builds of the same Dockerfile can differ.
-3. **No retention policy.** Nothing prunes old caches or catalogs. At roughly
-   2 GB per night against ~1.4 TB free, that is on the order of two years of
-   headroom — not urgent, but unbounded.
-4. **`usdfdev` only.** There is no production deployment.
-5. **`_workdir` in the served tree.** ~41 GB of intermediates are web-visible
-   between runs. Cleaning at the end of a run, or moving it to a scratch volume,
-   would fix it. Note that a scratch volume was tried and reverted: it produced
-   no measurable wall-time benefit and made `_workdir` a mountpoint, which broke
-   code that creates and removes that directory. If it is revisited, do it for
-   containment, not for speed.
-6. **Permissions are fragile.** Writes depend on a single named-user ACL and a
-   hardcoded uid, as described above.
-7. **Efficiency headroom, unclaimed.** The pod is CPU-throttled 10–17% of
-   scheduling periods because each `sorcha` process sizes its BLAS/numba thread
-   pool from the node's 128 cores rather than the pod's 48-core quota. Setting
-   `OMP_NUM_THREADS` and friends to 1 is untested but promising. Memory is also
-   over-provisioned — a ~21 GiB observed peak against a 64 Gi limit — though 1/min
-   sampling may have missed shorter spikes, so reduce it with measurement rather
-   than arithmetic.
-
+(promotion)=
 ## What promotion to production requires
 
 Not yet done, and listed here as a handover checklist rather than a plan of
@@ -536,7 +506,7 @@ block promotion.
    ([USDFSM-143](https://rubinobs.atlassian.net/browse/USDFSM-143)) and move the
    CronJob off an individual's identity. Today `runAsUser: 18728` is a personal
    account, and write access to the output directory rests on a `user:mjuric:rwx`
-   ACL — see gap 6. The `podSecurityContext` and that ACL have to change together,
+   ACL. The `podSecurityContext` and that ACL have to change together,
    and the account must exist before a production deployment writes anything.
 3. **Give the production `mpsky` service a static IP**, as was done at dev with
    `serviceAnnotations` on the `LoadBalancer`:
@@ -559,19 +529,28 @@ block promotion.
    artifacts rather than personal ones.
 6. **Freeze the references.** Pin `image.tag` to a `sha-<commit>` tag, and pin
    the bundled `mpsky` to a commit rather than a branch tip.
-7. **Wire up alerting**, including a lateness check, per gap 1.
+7. **Wire up alerting.** Nothing currently reports a failed or missing run.
+   A useful alert needs a lateness signal as well as a failure one — "no
+   cache for tonight by *T*" — because a run that never starts produces no
+   failure to catch.
 8. **Assign an owner**, and record the owning team and Slack channels — both in
    this note and in the [df-ops service
    page](https://df-ops.lsst.io/usdf-applications/ap/ephemcache/index.html),
    whose contact fields are currently blank.
-9. **Decide a retention policy** for caches and catalogs *(optional)*.
+9. **Decide a retention policy** for caches and catalogs *(optional)*. Nothing
+   prunes them today: roughly 2 GB per night against ~1.4 TB free, so on the
+   order of two years of headroom.
 10. **Reconsider the node pool** *(optional)*. The RSP pool is shared with
    interactive `nublado` users, and this is a batch job. The nodes also carry
    `edu.stanford.slac.sdf.storage/sdf-group`, which expresses the requirement
    this job actually has — filesystem access plus capacity — more precisely than
    "the RSP project" does. Worth asking SDF whether a batch workload belongs
    here.
-11. **Move `_workdir` out of the served tree** *(optional)*, per gap 5.
+11. **Move `_workdir` out of the served tree** *(optional)*. Cleaning it at the
+    end of a run would do; so would a scratch volume, but note that one was
+    tried and reverted — it produced no measurable wall-time benefit and made
+    `_workdir` a mountpoint, which broke the code that creates and removes
+    that directory. If it is revisited, do it for containment, not speed.
 
 ## The legacy epyc system
 
