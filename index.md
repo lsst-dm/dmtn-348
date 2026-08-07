@@ -79,6 +79,23 @@ flowchart LR
   MPSKY --> AP
 ```
 
+**A normal night.** The CronJob wakes every three hours, works out which
+observing night it is, and checks whether that night's cache already exists. Most
+of the time it does, and the job exits in under a second — doing nothing is the
+common case. When the cache is missing, the job queries the MPC replica for the
+current orbit catalogue (~9 min), splits it into 100 chunks, runs `sorcha` across
+48 cores to compute ephemerides for every known object (~15 min), packs the
+results into a single ~213 MB cache file and renames it into place. On the other
+side, `mpsky` wakes once a minute; when the night label changes it fetches that
+night's cache, retrying each minute until the cache exists. So a cache that lands
+late is picked up on its own and nobody has to restart anything. AP pipelines then
+query `mpsky` over HTTP until the night rolls over and the cycle repeats.
+
+End to end a real build takes about 26 minutes against a three-hourly schedule,
+so there is a wide margin before the night starts. Note that this margin is
+currently the only thing protecting the deadline, because a run that fails or
+never starts raises no alarm.
+
 The two components are coupled only through files in a directory that is served
 over HTTP. `ephemcache` never talks to `mpsky`, and `mpsky` never talks to the
 database. That is deliberate: either can be restarted, redeployed or rolled back
