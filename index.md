@@ -40,10 +40,9 @@ above, this is the single largest operational risk in the system, and closing it
 is the first thing a new owner should do. See {ref}`gaps`.
 :::
 
-Because the design rationale otherwise lives in a private repository, the
-reasoning behind non-obvious settings is inlined here — particularly where an
-operator could reasonably "tidy up" something load-bearing and break the system.
-Those places are called out as they arise.
+The reasoning behind non-obvious settings is given inline rather than left
+implicit, particularly where an operator could reasonably "tidy up" something
+load-bearing and break the system. Those places are called out as they arise.
 
 ## What the system does
 
@@ -531,8 +530,7 @@ the USDF tree as the sole source. That is a decision for the incoming owner.
 | Logs | Grafana Explore, Loki, `{app="ephemcache"}` |
 | Served output | <https://s3df.slac.stanford.edu/data/rubin/mpsky-data> |
 
-The design history — including decisions that were made and later reversed,
-with the measurements that disproved them — is kept in a private control
-repository, `mjuric/ephemcache-deploy`. The parts of it that bear on operating
-the system have been inlined above; ask the author for access if the rest is
-needed.
+Every measurement quoted in this note was taken on the deployed system at
+`usdfdev` during 2026-08-06/07. Where a design choice was made and later
+reversed, the reasoning and the measurement that settled it are given at the
+point where they matter rather than in a separate history.
