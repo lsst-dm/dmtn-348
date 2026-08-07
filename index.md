@@ -491,23 +491,28 @@ Ordered by how much they should worry a new owner.
 ## What promotion to production requires
 
 Not yet done, and listed here as a handover checklist rather than a plan of
-record. The first three are prerequisites rather than improvements.
+record. The first four are prerequisites; the rest are worth doing but need not
+block promotion.
 
-1. **Wire up alerting**, including a lateness check, per gap 1.
+1. **Deploy to a production cluster** — either the USDF RSP
+   (`usdfprod`, `usdf-rsp.slac.stanford.edu`) or prompt processing
+   (`usdfprod-prompt-processing`). Today the application is enabled only in
+   `environments/values-usdfdev.yaml`.
 2. **Freeze the references.** Pin `image.tag` to a `sha-<commit>` tag, and pin
    the bundled `mpsky` to a commit rather than a branch tip.
-3. **Assign an owner**, and record the owning team and Slack channels — both in
+3. **Wire up alerting**, including a lateness check, per gap 1.
+4. **Assign an owner**, and record the owning team and Slack channels — both in
    this note and in the [df-ops service
    page](https://df-ops.lsst.io/usdf-applications/ap/ephemcache/index.html),
    whose contact fields are currently blank.
-4. **Decide a retention policy** for caches and catalogs.
-5. **Reconsider the node pool.** The RSP pool is shared with interactive
-   `nublado` users, and this is a batch job. The nodes also carry
+5. **Decide a retention policy** for caches and catalogs *(optional)*.
+6. **Reconsider the node pool** *(optional)*. The RSP pool is shared with
+   interactive `nublado` users, and this is a batch job. The nodes also carry
    `edu.stanford.slac.sdf.storage/sdf-group`, which expresses the requirement
    this job actually has — filesystem access plus capacity — more precisely than
    "the RSP project" does. Worth asking SDF whether a batch workload belongs
    here.
-6. **Move `_workdir` out of the served tree**, per gap 5.
+7. **Move `_workdir` out of the served tree** *(optional)*, per gap 5.
 
 ## The legacy epyc system
 
