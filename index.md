@@ -126,9 +126,6 @@ where a given behaviour comes from — none of it is maintained here.
 
 **Ours.** Two services, one repository each:
 
-```{rst-class} technote-wide-content
-```
-
 | Service | Repository | What it is |
 |---|---|---|
 | `ephemcache` | [`mjuric/lsst-gen-ephemcache`](https://github.com/mjuric/lsst-gen-ephemcache) | The **cache generator**. The whole service: pipeline scripts, container entrypoint and selftest, `Dockerfile`, and the GitHub Actions workflow that publishes the image. |
@@ -156,9 +153,6 @@ scope for this note:
 Everything the two components share lives under
 `/sdf/group/rubin/web_data/mpsky-data`, which is published at
 <https://s3df.slac.stanford.edu/data/rubin/mpsky-data>.
-
-```{rst-class} technote-wide-content
-```
 
 | Path | Written by | Read by | Notes |
 |---|---|---|---|
@@ -236,9 +230,6 @@ Both components are Phalanx applications deployed by Argo CD at `usdfdev`, with
 From `applications/ephemcache/values.yaml`, overridden in
 `values-usdfdev.yaml`. The full generated reference is in the chart's
 `README.md`; these are the ones with consequences.
-
-```{rst-class} technote-wide-content
-```
 
 | Value | usdfdev | Why it matters |
 |---|---|---|
