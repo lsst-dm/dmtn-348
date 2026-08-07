@@ -14,7 +14,8 @@ this system.
 
 This note is written for Rubin Operations staff who will operate, maintain, fix
 and upgrade this system. It concentrates on how to keep it running rather than on
-the algorithms it uses; {ref}`algorithms` says where those live.
+the algorithms it uses; {ref}`the software inventory <algorithms>` separates what
+we own from what is upstream.
 
 The system is **still under development**. It runs at `usdfdev` only, several
 references are not frozen, and no one has yet been assigned to own it. Wherever
@@ -82,17 +83,33 @@ database. That is deliberate: either can be restarted, redeployed or rolled back
 independently.
 
 (algorithms)=
-### Where the algorithms live
+### The two services we own, and the upstream software they use
 
-Out of scope here, but for orientation:
+Everything in the first table is ours: we deploy it, and we are responsible for
+fixing it. Everything in the second is upstream, listed so that a reader knows
+where a given behaviour comes from — none of it is maintained here.
 
-| Concern | Where |
+**Ours.** Two services, one repository each:
+
+| Service | Repository | What it is |
+|---|---|---|
+| `ephemcache` | [`mjuric/lsst-gen-ephemcache`](https://github.com/mjuric/lsst-gen-ephemcache) | The **cache generator**. The whole service: pipeline scripts, container entrypoint and selftest, `Dockerfile`, and the GitHub Actions workflow that publishes the image. |
+| `mpsky` | [`mjuric/mpsky`](https://github.com/mjuric/mpsky) | The **ephemerides server**. Also provides `mpsky build`, which `ephemcache` runs as its final stage to write the cache. |
+
+Note that `mpsky` appears on both sides of the system: it is the server, and it
+is also the tool that writes the file the server reads. That coupling is the
+reason {ref}`upgrading it <upgrading-mpsky>` needs care.
+
+**Upstream, for reference.** Pulled in as dependencies; algorithms are out of
+scope for this note:
+
+| Concern | Package |
 |---|---|
-| Ephemeris generation | [`sorcha`](https://github.com/dirac-institute/sorcha) |
-| N-body integration | `assist` and `rebound`, used by sorcha |
-| Planetary positions | JPL/NAIF SPICE kernels, baked into the image |
-| Cache packing and query | [`mpsky`](https://github.com/mjuric/mpsky) (`mpsky build`, `mpsky serve`) |
-| Orchestration | [`lsst-gen-ephemcache`](https://github.com/mjuric/lsst-gen-ephemcache) |
+| Ephemeris generation | [`sorcha`](https://github.com/dirac-institute/sorcha) — invoked per chunk in stage 3 |
+| N-body integration | [`assist`](https://github.com/matthewholman/assist), used by sorcha |
+| Integrator underlying `assist` | [`rebound`](https://github.com/hannorein/rebound) |
+| Planetary and lunar positions | JPL/NAIF SPICE kernels, baked into the image |
+| SPICE bindings | `spiceypy` |
 
 ## Architecture and data products
 
@@ -391,6 +408,7 @@ uvx prek run --all-files
 (`applications`, `environments`, `charts`), and running only one of them leaves a
 generated `README.md` stale and fails CI.
 
+(upgrading-mpsky)=
 ### Upgrading mpsky
 
 `mpsky` appears **twice**: as the deployed service, and inside the cache-builder
