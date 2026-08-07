@@ -431,12 +431,6 @@ generated `README.md` stale and fails CI.
 image, where `mpsky build` writes the cache. Those two must agree on file
 formats.
 
-They have already been observed diverging. A builder image whose `mpsky` came
-from `main` could not even parse the deployed service's query response, failing
-in `ipc_read`. Both are currently built from the `auto-load` branch, and the
-compatibility of the current pair has been verified end to end, including the
-extended-elements path that reads the 1.6 GB sqlite database.
-
 **When upgrading either side, upgrade both, and re-verify.** The check is cheap:
 point `mpsky query --source http://172.24.10.34 <t> <ra> <dec> --radius 1
 --return-elements extended` at the service from inside the builder image and
