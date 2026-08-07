@@ -551,6 +551,13 @@ block promotion.
     tried and reverted — it produced no measurable wall-time benefit and made
     `_workdir` a mountpoint, which broke the code that creates and removes
     that directory. If it is revisited, do it for containment, not speed.
+12. **Pin the numeric library thread counts** *(optional)*. Each `sorcha`
+    process sizes its BLAS and numba thread pools from the node's 128 cores
+    rather than the pod's 48-core CPU quota, so threads greatly outnumber the
+    quota and the pod is throttled 10–17% of scheduling periods. Setting
+    `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS`, `MKL_NUM_THREADS` and
+    `NUMBA_NUM_THREADS` to 1 should remove the oversubscription and may recover
+    real wall time. Untested.
 
 ## The legacy epyc system
 
