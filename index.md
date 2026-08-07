@@ -438,11 +438,9 @@ confirm it decodes.
 
 ### Upgrading the SPICE kernels
 
-The ~780 MB of JPL/NAIF kernels are baked into the image so that the image tag
+The ~780 MB of JPL/NAIF SPICE kernels are baked into the image so that the image tag
 answers "which physics produced this cache?". Updating them therefore requires an
-image rebuild. The build must `chmod -R a+rX` them afterwards: `pooch` writes
-each download through a mode-600 temporary file and the build runs as root, so
-without the chmod every kernel is unreadable to the non-root pod.
+image rebuild.
 
 ## Troubleshooting
 
@@ -453,16 +451,16 @@ Symptoms actually observed, with causes and fixes.
 | `night=N not in available in <url>` and HTTP 400 | That night has no cache in the datastore. Remember `night = floor(t) - 1` before concluding it is missing | Build that night, or accept the gap |
 | HTTP 403 fetching a cache that is listed in the index | File is not world-readable. The web server is not a member of `rubin_users`, so mode 660 is not enough | `chmod o+r` the file; new output is already 644 |
 | Job stays `Pending` indefinitely | Missing toleration or `nodeSelector`, or a request too large for the general pool | Ensure both RSP keys are present |
-| `The JPL planet ephemeris file has not been found` | Kernels present but unreadable — a permission denial wearing a missing-file message | `chmod -R a+rX` at image build time |
-| `ValueError: output array is read-only` in `mpsky build` | pandas 3 makes Copy-on-Write mandatory, so `.values` arrays are read-only | The image pins `pandas<3`; do not relax it without fixing mpsky |
+| `The JPL planet ephemeris file has not been found` | SPICE kernels present but unreadable — a permission denial wearing a missing-file message | `chmod -R a+rX` at image build time |
+| `ValueError: output array is read-only` in `mpsky build` | **`mpsky` is currently incompatible with pandas 3**, which makes Copy-on-Write mandatory and so returns read-only arrays from `.values`. `mpsky` writes to one in place | The image pins `pandas<3`. Do not relax that pin until `mpsky` is fixed — the failure comes at the very end of a run, after the whole fan-out has completed |
 | Pod OOM-killed during stage 3 | `ncores` does not match `resources.limits.cpu`, so parallelism was taken from `nproc` | Set them together |
 | Job reports success but no cache appeared | A pipeline whose last stage is `tee` masks the real exit status | The entrypoint exits with `${PIPESTATUS[0]}`; preserve that if editing |
 | No logs available for a run that finished | Pods are reaped within ~30 minutes | Use Loki, or the `logs/` copy |
-| `furnsh_c --> FURNSH --> ZZLDKER` | `meta_kernel.txt` records the **absolute path** of the directory the kernels were bootstrapped into; if the cache is moved or staged, SPICE points at a directory that no longer exists | Ensure `PATH_VALUES` matches the kernels' actual location |
+| `furnsh_c --> FURNSH --> ZZLDKER` | `meta_kernel.txt` records the **absolute path** of the directory the SPICE kernels were bootstrapped into; if that directory is moved or staged, SPICE points somewhere that no longer exists | Ensure `PATH_VALUES` matches the SPICE kernels' actual location |
 | Whole pipeline silently capped at 100 chunks | A glob of the form `orbits-000*.csv` matches only three-digit chunk numbers | Fixed; the glob is `orbits-*.csv` |
 
 A general lesson from several of these: **a check that passes is not the same as
-a check that verified something.** A kernel-readability check once reported
+a check that verified something.** A SPICE-kernel readability check once reported
 `all 0 kernels readable` for months because `find` does not descend into a
 symlinked directory. When diagnosing, confirm that the check you are trusting
 actually enumerated anything.
