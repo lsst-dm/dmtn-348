@@ -391,14 +391,11 @@ Measured at `usdfdev`, 100 partitions, 48 CPU / 64 Gi:
 | Output size | ~213 MB per night |
 | A run that skips | under 1 second |
 
-Two results worth recording because they contradict plausible intuitions.
-**Increasing the partition count makes it slower**: 300 partitions took 1270 s
+One result worth recording, because it contradicts a plausible intuition:
+**increasing the partition count makes it slower.** 300 partitions took 1270 s
 against 1061 s for 100, about 20% worse, because each `sorcha` process must load
 ~780 MB of SPICE kernels at startup and tripling the process count triples that
-fixed cost. And **output is bit-for-bit reproducible** at a fixed partition
-count — four independent runs produced md5
-`be922ce37232562008ec50affea0c5f9` — which makes it easy to confirm that a
-change was behaviour-neutral.
+fixed cost.
 
 ## Maintaining and upgrading
 
