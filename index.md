@@ -158,7 +158,7 @@ Everything the two components share lives under
 |---|---|---|---|
 | `caches/eph.<mjd>.<date>.bin` | stage 4 | `mpsky` | ~213 MB per night; the cache proper |
 | `catalogs/mpcorb-orbits.<date>.csv` | stage 1 | `mpsky`, stage 3 | ~190 MB |
-| `catalogs/mpc_orbits.<date>.sqlite.zst` | stage 1 | `mpsky` | ~1.6 GB; needed for extended element queries |
+| `catalogs/mpc_orbits.<date>.sqlite.zst` | stage 1 | `mpsky` | ~1.6 GB. Holds the full `mpc_orbits` table records. `mpsky` returns these to the AP pipelines, which serve them to users in alerts; this is what `--return-elements extended` supplies |
 | `catalogs/mpcorb-colors.<date>.csv` | stage 1 | stage 3 | not read by `mpsky` |
 | `_workdir/` | stages 2–3 | stage 4 | ~41 GB of transient intermediates |
 | `logs/` | entrypoint | humans | mode 700, deliberately **not** served |
