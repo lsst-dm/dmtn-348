@@ -491,14 +491,20 @@ Ordered by how much they should worry a new owner.
 ## What promotion to production requires
 
 Not yet done, and listed here as a handover checklist rather than a plan of
-record. The first six are prerequisites; the rest are worth doing but need not
+record. The first seven are prerequisites; the rest are worth doing but need not
 block promotion.
 
 1. **Deploy to a production cluster** — either the USDF RSP
    (`usdfprod`, `usdf-rsp.slac.stanford.edu`) or prompt processing
    (`usdfprod-prompt-processing`). Today the application is enabled only in
    `environments/values-usdfdev.yaml`.
-2. **Give the production `mpsky` service a static IP**, as was done at dev with
+2. **Have a service account created**
+   ([USDFSM-143](https://rubinobs.atlassian.net/browse/USDFSM-143)) and move the
+   CronJob off an individual's identity. Today `runAsUser: 18728` is a personal
+   account, and write access to the output directory rests on a `user:mjuric:rwx`
+   ACL — see gap 6. The `podSecurityContext` and that ACL have to change together,
+   and the account must exist before a production deployment writes anything.
+3. **Give the production `mpsky` service a static IP**, as was done at dev with
    `serviceAnnotations` on the `LoadBalancer`:
 
    ```yaml
@@ -508,23 +514,23 @@ block promotion.
    ```
 
    A production deployment needs its own address from the appropriate pool.
-3. **Repoint the AP pipelines** at the production `mpsky` service, once it has a
+4. **Repoint the AP pipelines** at the production `mpsky` service, once it has a
    stable address.
-4. **Freeze the references.** Pin `image.tag` to a `sha-<commit>` tag, and pin
+5. **Freeze the references.** Pin `image.tag` to a `sha-<commit>` tag, and pin
    the bundled `mpsky` to a commit rather than a branch tip.
-5. **Wire up alerting**, including a lateness check, per gap 1.
-6. **Assign an owner**, and record the owning team and Slack channels — both in
+6. **Wire up alerting**, including a lateness check, per gap 1.
+7. **Assign an owner**, and record the owning team and Slack channels — both in
    this note and in the [df-ops service
    page](https://df-ops.lsst.io/usdf-applications/ap/ephemcache/index.html),
    whose contact fields are currently blank.
-7. **Decide a retention policy** for caches and catalogs *(optional)*.
-8. **Reconsider the node pool** *(optional)*. The RSP pool is shared with
+8. **Decide a retention policy** for caches and catalogs *(optional)*.
+9. **Reconsider the node pool** *(optional)*. The RSP pool is shared with
    interactive `nublado` users, and this is a batch job. The nodes also carry
    `edu.stanford.slac.sdf.storage/sdf-group`, which expresses the requirement
    this job actually has — filesystem access plus capacity — more precisely than
    "the RSP project" does. Worth asking SDF whether a batch workload belongs
    here.
-9. **Move `_workdir` out of the served tree** *(optional)*, per gap 5.
+10. **Move `_workdir` out of the served tree** *(optional)*, per gap 5.
 
 ## The legacy epyc system
 
