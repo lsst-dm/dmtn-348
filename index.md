@@ -260,26 +260,13 @@ apart. Change them together.
 
 ### Node placement
 
-The job runs on the RSP node pool: four nodes, `sdfk8so001`–`004`, each 128 CPU
-and roughly 503 GiB.
-
-Those nodes carry the taint
-`edu.stanford.slac.sdf.project/rsp=true:NoSchedule`, so **both** keys are needed
-and neither is redundant. The toleration grants *permission* to land on tainted
-nodes but does not attract the pod anywhere; without the `nodeSelector` the
-scheduler could place it on any general node. The `nodeSelector` matches a
-*label* of the same name and confines the pod to those four.
-
-This is not merely preference. Bare probe pods requesting 48 CPU / 64 Gi,
-32 CPU / 64 Gi, 48 CPU / 240 Gi **and 16 CPU / 32 Gi** all sat `Pending` on the
-general pool; a representative message was `151 node(s) had untolerated
-taint(s), 22 Too many pods, 33 Insufficient memory, 35 Insufficient cpu`. Small
-`selftest` pods at 1 CPU / 2 Gi do schedule there, so the ceiling is somewhere
-well below 16 cores.
-
-`nublado` is the only other application using this pool, and its values file is
-effectively the only documentation of the convention — there is nothing about the
-pool in the Phalanx docs or in `slaclab/sdf-docs`.
+The job runs on the RSP node pool — four nodes, `sdfk8so001`–`004`, each 128 CPU
+and roughly 503 GiB — placed there by `nodeSelector:
+edu.stanford.slac.sdf.project/rsp: "true"` together with a `NoSchedule`
+toleration for the taint of the same name. Both are required: the toleration
+permits the tainted nodes, the `nodeSelector` steers the pod to them. This is not
+a preference — probe pods requesting as little as 16 CPU / 32 Gi sat `Pending`
+indefinitely on the general pool.
 
 ### Storage and the write path
 
