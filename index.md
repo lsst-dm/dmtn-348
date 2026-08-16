@@ -240,7 +240,7 @@ From `applications/ephemcache/values.yaml`, overridden in
 | `resources` | 48 CPU / 64 Gi | Both requests and limits |
 | `activeDeadlineSeconds` | `5400` | 90 min; a wedged run cannot occupy the pool indefinitely |
 | `outputDirMount.subPath` | `web_data/mpsky-data` | The security boundary — see below |
-| `logToFile` | `true` | Durable log copy under `logs/` |
+| `logToFile` | `true` | A *second*, durable copy under `logs/`. Output always goes to stdout regardless; this is not the only sink |
 | `nodeSelector`, `tolerations` | RSP pool | **Both** are required — see below |
 
 :::{warning}
@@ -398,7 +398,16 @@ against 1061 s for 100, about 20% worse, because each `sorcha` process must load
 ~780 MB of SPICE kernels at startup and tripling the process count triples that
 fixed cost.
 
+These costs scale with the number of known objects, so they grow as discoveries
+accumulate — but boundedly. The expectation is at most about a threefold increase
+over the next four years or so, and largely flat after that.
+
 ## Maintaining and upgrading
+
+Expect to do this rarely. Ephemeris computation is relatively mature, so upgrades
+should be driven by bug fixes and new features rather than by a schedule. Two to
+three years out, the expectation is no more than one update a year, largely to
+keep pace with Python and dependency versions.
 
 ### Changing the cache builder
 
@@ -531,16 +540,20 @@ block promotion.
 6. **Freeze the references.** Pin `image.tag` to a `sha-<commit>` tag, and pin
    the bundled `mpsky` to a commit rather than a branch tip.
 7. **Wire up alerting.** Nothing currently reports a failed or missing run.
-   A useful alert needs a lateness signal as well as a failure one — "no
-   cache for tonight by *T*" — because a run that never starts produces no
-   failure to catch.
+   Key it on the Job's status and on the presence of tonight's cache, not on log
+   scraping: the run emits no success or failure banner, though its exit status
+   is trustworthy. A useful alert also needs a lateness signal as well as a
+   failure one — "no cache for tonight by *T*" — because a run that never starts
+   produces no failure to catch.
 8. **Assign an owner**, and record the owning team and Slack channels — both in
    this note and in the [df-ops service
    page](https://df-ops.lsst.io/usdf-applications/ap/ephemcache/index.html),
    whose contact fields are currently blank.
 9. **Decide a retention policy** for caches and catalogs *(optional)*. Nothing
    prunes them today: roughly 2 GB per night against ~1.4 TB free, so on the
-   order of two years of headroom.
+   order of two years of headroom. The proposal on the table is to keep
+   everything: the files are small, and they allow a night to be reprocessed to
+   nearly byte-identical results, which has already proved useful.
 10. **Reconsider the node pool** *(optional)*. The RSP pool is shared with
    interactive `nublado` users, and this is a batch job. The nodes also carry
    `edu.stanford.slac.sdf.storage/sdf-group`, which expresses the requirement
