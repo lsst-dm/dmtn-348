@@ -1,0 +1,45 @@
+/* Tables should wrap to fit the content column, never scroll horizontally.
+ *
+ * Left to itself the table sizes to its max-content width, so a long cell keeps
+ * its text on one line and the table overflows the page. Constraining the table
+ * to its container makes the automatic layout wrap instead.
+ */
+table.docutils {
+  width: 100%;
+  max-width: 100%;
+  display: table;
+}
+
+table.docutils td,
+table.docutils th {
+  overflow-wrap: break-word;
+  vertical-align: top;
+  white-space: normal;
+}
+
+/* Sphinx marks inline code up as <code><span class="pre">…</span></code>, and
+ * `pre` refuses to wrap, so a long path in a cell would still force the table
+ * wide. Allow mid-token breaks, but only inside tables.
+ */
+table.docutils code,
+table.docutils code span.pre,
+table.docutils span.pre {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+/* Gridlines: the stock theme rules horizontally only, which is hard to follow
+ * in the denser tables here.
+ */
+table.docutils,
+table.docutils td,
+table.docutils th {
+  border: 1px solid #ccc;
+  border-collapse: collapse;
+}
+
+table.docutils td,
+table.docutils th {
+  padding: 0.4em 0.6em;
+}
