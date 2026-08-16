@@ -498,9 +498,10 @@ Not yet done, and listed here as a handover checklist rather than a plan of
 record. The first eight are prerequisites; the rest are worth doing but need not
 block promotion.
 
-1. **Deploy to a production cluster** — either the USDF RSP
-   (`usdfprod`, `usdf-rsp.slac.stanford.edu`) or prompt processing
-   (`usdfprod-prompt-processing`). Today the application is enabled only in
+1. **Deploy to a production cluster.** The Prompt Processing team have
+   confirmed they can host it, so `usdfprod-prompt-processing` is the expected
+   target; the USDF RSP (`usdfprod`, `usdf-rsp.slac.stanford.edu`) is the
+   alternative. Today the application is enabled only in
    `environments/values-usdfdev.yaml`.
 2. **Have a service account created**
    ([USDFSM-143](https://rubinobs.atlassian.net/browse/USDFSM-143)) and move the
