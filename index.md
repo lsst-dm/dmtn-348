@@ -539,12 +539,13 @@ block promotion.
    artifacts rather than personal ones.
 6. **Freeze the references.** Pin `image.tag` to a `sha-<commit>` tag, and pin
    the bundled `mpsky` to a commit rather than a branch tip.
-7. **Wire up alerting.** Nothing currently reports a failed or missing run.
-   Key it on the Job's status and on the presence of tonight's cache, not on log
-   scraping: the run emits no success or failure banner, though its exit status
-   is trustworthy. A useful alert also needs a lateness signal as well as a
-   failure one — "no cache for tonight by *T*" — because a run that never starts
-   produces no failure to catch.
+7. **Wire up alerting.** Nothing currently reports a failed or missing run. The
+   proposal is a small separate service that checks the night's cache files have
+   appeared where they belong by a deadline. Checking for the files rather than
+   watching the Job catches both cases at once — a run that fails, and one that
+   never starts and so produces no failure to catch. Do not key on log scraping:
+   the run emits no success or failure banner, though its exit status is
+   trustworthy.
 8. **Assign an owner**, and record the owning team and Slack channels — both in
    this note and in the [df-ops service
    page](https://df-ops.lsst.io/usdf-applications/ap/ephemcache/index.html),
